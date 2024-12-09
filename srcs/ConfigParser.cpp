@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: akovalev <akovalev@student.42.fr>          +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 18:51:19 by akovalev          #+#    #+#             */
-/*   Updated: 2024/12/04 17:08:49 by akovalev         ###   ########.fr       */
+/*   Updated: 2024/12/09 17:13:12 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,13 @@ void ConfigParser::parseLocationBlock(size_t& index)
 	index++;
 	if (_tokens[index].type != TokenType::OPEN)
 		unexpectedToken(index);
+	
+	std::cout << "***************"	<< std::endl;
+	std::cout << "Adding location block " << _tokens[index - 1].values[0] << std::endl;
+	std::cout << "***************"	<< std::endl;
 	_server_blocks[_server_blocks.size() - 1].getLocations().push_back(LocationBlock(_tokens[index - 1].values[0]));
+	size_t len = _server_blocks[_server_blocks.size() - 1].getLocations().size();
+	_server_blocks[_server_blocks.size() - 1].locationsptr.push_back(&(_server_blocks[_server_blocks.size() - 1].getLocations()[len -1]));
 	while (index < _tokens.size())
 	{
 		if (_tokens[index].type == TokenType::OPEN)
@@ -375,6 +381,8 @@ void ConfigParser::printServerConfig()
 		std::cout << "Locations: " << std::endl;
 		for (LocationBlock& location : server.getLocations())
 		{
+			std::cout << "location of location: " << location.getLocation() << std::endl;
+			std::cout << "location ptr: " << &location << std::endl;
 			location.printLocationBlock();
 			std::cout << "--------------------------------" << std::endl;
 			std::cout << std::endl;

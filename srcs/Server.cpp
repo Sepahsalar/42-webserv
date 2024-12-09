@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:28 by nnourine          #+#    #+#             */
-/*   Updated: 2024/12/04 15:22:17 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 16:45:36 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 Server::Server(ServerBlock & serverBlock)
     : _socket_fd(-1), _fd_epoll(-1), _config(serverBlock.getListen(),
 	serverBlock.getHost(), serverBlock.getClientMaxBodySize(), serverBlock.getServerName()), _num_clients(0)
-	, _responseMaker(serverBlock)
+	, _responseMaker(serverBlock), _serverBlock(serverBlock)
 {
 	
 	applyCustomSignal();
@@ -27,6 +27,9 @@ Server::Server(ServerBlock & serverBlock)
 	eventData.type = LISTENING;
 	eventData.index = MAX_CONNECTIONS;
 	eventData.fd = -1;
+
+	std::cout << "Server Block pointer: " << & serverBlock << std::endl;
+	std::cout << "Server Block pointer in Server: " << &_serverBlock << std::endl;
 	
 	createClientConnections(serverBlock);
 };

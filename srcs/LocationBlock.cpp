@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationBlock.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/30 19:33:46 by akovalev          #+#    #+#             */
-/*   Updated: 2024/12/04 16:48:57 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 16:55:24 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@ LocationBlock::LocationBlock(/* args */)
 	_autoindex = false;
 	_client_max_body_size = 0;
 	_return = std::make_pair(0, "");
+	backup_location = "";
+	_location = "";
 }
 
 LocationBlock::LocationBlock(std::string location)
@@ -24,11 +26,13 @@ LocationBlock::LocationBlock(std::string location)
 	_autoindex = false;
 	_client_max_body_size = 0;
 	_location = location;
+	backup_location = location;
 	_return = std::make_pair(0, "");
 }
 
 LocationBlock::~LocationBlock()
 {
+	std::cout << "LocationBlock destructor: " << this << std::endl;
 }
 
 std::string LocationBlock::getLocation() const
@@ -143,6 +147,7 @@ void LocationBlock::setReturn(std::string return_val, const std::string& url)
 void LocationBlock::setLocation(const std::string& location) // may not be needed
 {
 	_location = location;
+	backup_location = location;
 }
 
 void LocationBlock::setRoot(const std::string& root)

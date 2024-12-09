@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:19 by nnourine          #+#    #+#             */
-/*   Updated: 2024/12/04 17:02:02 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 17:26:32 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,17 +58,18 @@ bool sigInt(std::vector<std::unique_ptr<Server>> const & servers)
 	return false;
 }
 
-int main(int argc, char **argv)
+// int main(int argc, char **argv)
+int main()
 {
-	if (argc != 2)
-	{
-		std::cerr << "Usage: ./webserv <config_file>" << std::endl;
-		return 1;
-	}
+	// if (argc != 2)
+	// {
+	// 	std::cerr << "Usage: ./webserv <config_file>" << std::endl;
+	// 	return 1;
+	// }
 	ConfigParser config;
 
-	// std::ifstream file("config/webserv.conf");
-	std::ifstream file(argv[1]);
+	std::ifstream file("config/config.conf");
+	// std::ifstream file(argv[1]);
 	if (!file.is_open())
 	{
 		std::cerr << "Error: could not open file" << std::endl;
@@ -90,13 +91,13 @@ int main(int argc, char **argv)
 	config.printServerConfig();
 
 	// Creating servers
-	std::vector<std::unique_ptr<Server>>	servers;
+	std::vector<std::unique_ptr<Server>>	servers; //////////////!!!!!!!!
 
 	for(std::size_t i = 0; (i < config.getServerBlocks().size() && !sigInt(servers)); i++)
 	{
 		try
 		{
-			servers.push_back(std::make_unique<Server>(config.getServerBlocks().at(i)));
+			servers.push_back(std::make_unique<Server>(config.getServerBlocks().at(i))); //////////////!!!!!!!!
 		}
 		catch(SocketException const & e)
 		{
@@ -111,6 +112,8 @@ int main(int argc, char **argv)
 			Server::logError("Unknown exception during server creation for config block " + std::to_string(i + 1));
 		}
 	}
+	std::cout << "Servers created" << std::endl;
+	config.printServerConfig();
 	
 	// Handling events
 	std::size_t	serverNum;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:59 by nnourine          #+#    #+#             */
-/*   Updated: 2024/12/04 15:18:51 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 16:44:51 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,7 @@ class Server
 		Response						_response;
 		struct eventData 				eventData;
 		HttpHandler						_responseMaker;
+		ServerBlock						&_serverBlock;
 
 		// ClientConnection Methods
 		void							occupyClientSlot(int availbleSlot, int fd);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpHandler.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:39:26 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 17:11:51 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 16:54:25 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 HttpHandler::HttpHandler(ServerBlock &serverConfig)
 	: _cgiHandler(serverConfig), _rootDir(serverConfig.getLocations()[0].getRoot())
-	, _serverBlock(serverConfig)
+	, _serverBlock(serverConfig), _serverBlockPtr(&serverConfig)
 	{
 		//creating a default state of map
 		_errorPages[404]="default_404.html";
@@ -23,6 +23,8 @@ HttpHandler::HttpHandler(ServerBlock &serverConfig)
 		//filling the map with the error pages from the server block
 		for (const auto &errorPage : serverConfig.getErrorPages())
 			_errorPages[errorPage.first] = errorPage.second;
+		std::cout << "Input Server Block pointer in HttpHandler: " << & serverConfig << std::endl;
+		std::cout << "Server Block pointer in HttpHandler: " << _serverBlockPtr << std::endl;
 	}
 
 HttpHandler::~HttpHandler() {}
@@ -84,7 +86,7 @@ std::string	HttpHandler::_validateRequest(const Request &req)
 std::string	HttpHandler::createResponse(const std::string &request)
 {
 	Request	req(request);
-
+	
 	return handleRequest(req);
 }
 
@@ -97,6 +99,10 @@ std::string	HttpHandler::handleRequest(const Request &req)
 		// 	return validation;
 
 		LocationBlock	matchedLocation;
+		
+		
+		
+		
 
 		// Override root if location-specific root is defined
 		if (!matchedLocation.getRoot().empty())
@@ -109,14 +115,48 @@ std::string	HttpHandler::handleRequest(const Request &req)
 		// Handle client_max_body_size for the specific location
 		if (matchedLocation.getClientMaxBodySize() > 0)
 			_maxBodySize = matchedLocation.getClientMaxBodySize(); //maybe not needed
-
-		for (const auto &location : _serverBlock.getLocations())
+		try
 		{
-			if (req.getPath().find(location.getLocation()) == 0)
+			// int i = 1;
+			// std::cout << "before locations" << std::endl;
+			// std::cout << "locations size: " << _serverBlockPtr->getLocations().size() << std::endl;
+			// std::vector<LocationBlock> locations ( _serverBlockPtr->getLocations());
+			// std::cout << "after locations" << std::endl;
+			// std::cout << "locations size: " << locations.size() << std::endl;
+			std::cout << "before for loop" << std::endl;
+			// for (LocationBlock &location : _serverBlockPtr->getLocations())
+			// {
+			// 	std::cout << "location " << i << ": " << location.getLocation() << std::endl;
+			// 	if (req.getPath().find(location.getLocation()) == 0)
+			// 	{
+			// 		matchedLocation = location;
+			// 		break;
+			// 	}
+			// }
+			std::cout << "before for loop the ptr is" << _serverBlockPtr << std::endl;
+			std::cout << "locations size: " << _serverBlockPtr->getLocations().size() << std::endl;
+			std::cout << "location 0 : " << &(_serverBlockPtr->getLocations()[0]) << std::endl;
+			// std::cout << "autoindex: " << _serverBlockPtr->getLocations()[0].getAutoindex() << std::endl;
+			// std::cout << "index: " << _serverBlockPtr->getLocations()[0].getIndex() << std::endl;
+			
+			std::cout << "location 0 : " << _serverBlockPtr->getLocations()[0].backup_location << std::endl;
+			std::cout << "location 0 : " << _serverBlockPtr->getLocations()[0].getLocation() << std::endl; 
+			for (size_t i = 0; i < _serverBlockPtr->getLocations().size(); i++)
 			{
-				matchedLocation = location;
-				break;
+				// std::cout << "location " << i << ": " << _serverBlock.getLocations()[i].getLocation() << std::endl;
+				// std::cout << "location " << i << ": " << (_serverBlockPtr->getLocations())[i].backup_location << std::endl;
+				std::cout << "location " << i << ": " << _serverBlockPtr->getLocations()[i].getRoot() << std::endl;
+				if (req.getPath() == _serverBlockPtr->getLocations()[i].getLocation())
+				{
+					matchedLocation = _serverBlockPtr->getLocations()[i];
+					break;
+				}				
 			}
+			std::cout << "done" << std::endl;
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
 		}
 
 		if (!matchedLocation.getReturn().second.empty())

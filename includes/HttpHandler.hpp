@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpHandler.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:39:07 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 17:08:42 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 15:40:57 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ class HttpHandler
 		CGIHandler					_cgiHandler;
 		std::string					_rootDir;
 		ServerBlock					&_serverBlock;
+		ServerBlock					*_serverBlockPtr;
 		// last one might be better to be const, then
 		// getlocations function in serverblock needs to change too
 		std::map<int, std::string>	_errorPages;
