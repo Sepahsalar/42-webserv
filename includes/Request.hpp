@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:31:09 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 15:16:50 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 18:46:56 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ class Request
 		std::string 						_path;
 		std::string 						_httpVersion;
 		std::map<std::string, std::string>	_headers;
+		bool								_keepAlive;
 		std::string							_body;
 
 	public:
@@ -38,6 +39,7 @@ class Request
 		const std::string					&getHttpVersion() const;
 		const std::string					&getHeader(const std::string& key) const;
 		const std::string					&getBody() const;
+		bool								getKeepAlive() const;
 
 		void								parse(const std::string& rawRequest);
 };

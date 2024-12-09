@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 17:26:44 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/11/28 14:51:52 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 18:40:44 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,8 @@ class Response
 		void								setHeader(const std::string &key, const std::string &value);
 		void								setBody(const std::string &body);
 
+		std::string							getStatusLine() const;
+		std::string							getHeaders() const;
 		std::string							getBody() const;
 		std::string							toString() const;
 };

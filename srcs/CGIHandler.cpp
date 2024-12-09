@@ -3,21 +3,24 @@
 /*                                                        :::      ::::::::   */
 /*   CGIHandler.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:53:02 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 16:44:18 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 19:24:24 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CGIHandler.hpp"
+#include "HttpHandler.hpp"
 
 CGIHandler::CGIHandler(ServerBlock &serverConfig) : _serverBlock(serverConfig) {}
 
 CGIHandler::~CGIHandler() {}
 
-std::string	CGIHandler::execute(const Request &req)
+std::vector<std::string>	CGIHandler::execute(const Request &req)
 {
+	HttpHandler	httpHandler(_serverBlock);
+
 	try
 	{
 		// Check for allowed CGI extensions
@@ -109,7 +112,9 @@ std::string	CGIHandler::execute(const Request &req)
 				response.setStatusLine("HTTP/1.1 500 Internal Server Error");
 				response.setBody("CGI script error\n");
 			}
-			return response.toString();
+			// return response.toString();
+			
+			return httpHandler.createResponseParts(req, response);
 		}
 	}
 
@@ -119,12 +124,14 @@ std::string	CGIHandler::execute(const Request &req)
 		
 		response.setStatusLine("HTTP/1.1 500 Internal Server Error");
 		response.setBody("Error: " + std::string(e.what()) + "\n");
-		return response.toString();
+		// return response.toString();
+		return httpHandler.createResponseParts(req, response);
 	}
 
 	Response	unexpectedResponse;
 
 	unexpectedResponse.setStatusLine("HTTP/1.1 500 Internal Server Error");
 	unexpectedResponse.setBody("Unexpected error\n");
-	return unexpectedResponse.toString();
+	// return unexpectedResponse.toString();
+	return httpHandler.createResponseParts(req, unexpectedResponse);
 }

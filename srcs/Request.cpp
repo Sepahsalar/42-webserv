@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:31:01 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 15:21:57 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 18:48:20 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
 
-Request::Request() : _method(""), _path(""), _httpVersion(""), _headers(), _body("") {}
+Request::Request() : _method(""), _path(""), _httpVersion(""), _headers(), _keepAlive(true), _body("") {}
 
 Request::Request(const std::string &rawRequest)
 {
@@ -45,6 +45,8 @@ const std::string	&Request::getHeader(const std::string &key) const
 }
 const std::string	&Request::getBody() const { return _body; }
 
+bool	Request::getKeepAlive() const { return _keepAlive; }
+
 // Might need to use Andrey's parsing method
 void	Request::parse(const std::string &rawRequest)
 {
@@ -60,6 +62,11 @@ void	Request::parse(const std::string &rawRequest)
 		handleError("Invalid request format");
 
 	// Handle headers
+	if (rawRequest.find("Connection: close") != std::string::npos)
+		_keepAlive = false;
+	else
+		_keepAlive = true;
+
 	while (std::getline(stream, line) && line != "\r")
 	{
 		std::size_t	colon = line.find(':');

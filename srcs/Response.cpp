@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 17:26:33 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/11/28 14:55:19 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 18:41:07 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,17 @@ void	Response::setBody(const std::string &body)
 {
 	_body = body;
 	_headers["Content-Length"] = std::to_string(body.size());
+}
+
+std::string	Response::getStatusLine() const { return _statusLine; }
+
+std::string	Response::getHeaders() const
+{
+	std::ostringstream	headers;
+
+	for (const auto &header : _headers)
+		headers << header.first << ": " << header.second << "\r\n";
+	return headers.str();
 }
 
 std::string	Response::getBody() const { return _body; }

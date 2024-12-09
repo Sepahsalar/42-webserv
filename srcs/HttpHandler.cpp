@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpHandler.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:39:26 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 17:11:51 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 19:38:41 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,10 +50,10 @@ std::string	HttpHandler::_getErrorPage(int statusCode)
 	// const std::map<int, std::string>	&errorPages = _serverBlock.getErrorPages();
 	const auto	&errorPages = _serverBlock.getErrorPages();
 	
-	std::cout << "we are here" << std::endl;
+	// std::cout << "we are here" << std::endl;
 	if (errorPages.find(statusCode) != errorPages.end())
 	{
-		std::cout << "we are here 2" << std::endl;
+		// std::cout << "we are here 2" << std::endl;
 		return errorPages.at(statusCode); // Custom error page
 	}
 	std::cout << "we are not here" << std::endl;
@@ -81,14 +81,14 @@ std::string	HttpHandler::_validateRequest(const Request &req)
 	return "Ok";
 }
 
-std::string	HttpHandler::createResponse(const std::string &request)
+std::vector<std::string>	HttpHandler::createResponse(const std::string &request)
 {
 	Request	req(request);
 
 	return handleRequest(req);
 }
 
-std::string	HttpHandler::handleRequest(const Request &req)
+std::vector<std::string>	HttpHandler::handleRequest(const Request &req)
 {
 	try
 	{
@@ -98,6 +98,23 @@ std::string	HttpHandler::handleRequest(const Request &req)
 
 		LocationBlock	matchedLocation;
 
+		for (const auto &location : _serverBlock.getLocations())
+		{
+			if (req.getPath().find(location.getLocation()) == 0)
+			{
+				matchedLocation = location;
+				break;
+			}
+		}
+
+		if (matchedLocation.getLocation().empty())
+		{
+			std::vector<std::string>	response;
+	
+			response.push_back(_getErrorPage(404));
+			std::cout << _getErrorPage(404) << std::endl;
+			return response; // Not found
+		}
 		// Override root if location-specific root is defined
 		if (!matchedLocation.getRoot().empty())
 			_rootDir = matchedLocation.getRoot();
@@ -110,22 +127,14 @@ std::string	HttpHandler::handleRequest(const Request &req)
 		if (matchedLocation.getClientMaxBodySize() > 0)
 			_maxBodySize = matchedLocation.getClientMaxBodySize(); //maybe not needed
 
-		for (const auto &location : _serverBlock.getLocations())
-		{
-			if (req.getPath().find(location.getLocation()) == 0)
-			{
-				matchedLocation = location;
-				break;
-			}
-		}
-
 		if (!matchedLocation.getReturn().second.empty())
 		{
 			Response	response;
 
 			response.setStatusLine("HTTP/1.1 " + std::to_string(matchedLocation.getReturn().first) + " Redirect");
 			response.setHeader("Location", matchedLocation.getReturn().second);
-			return response.toString();
+			// return response.toString();
+			return createResponseParts(req, response);
 		}
 
 		if (!matchedLocation.getAlias().empty())
@@ -161,16 +170,25 @@ std::string	HttpHandler::handleRequest(const Request &req)
 			return handlePOST(req);
 		else if (req.getMethod() == "DELETE")
 			return handleDELETE(req);
-
-		return _getErrorPage(405); // Method not allowed
+		else
+		{
+			std::vector<std::string>	response;
+			
+			response.push_back(_getErrorPage(405)); // Method not allowed
+			return response;
+		}
 	}
-	catch (const std::runtime_error &e)
-	{
-		return e.what(); // Handle runtime errors (e.g., method not allowed)
-	}
+	// catch (const std::runtime_error &e)
+	// {
+	// 	std::cerr << e.what(); // Handle runtime errors (e.g., method not allowed)
+	// 	return std::vector<std::string>();
+	// }
 	catch(const SystemCallError &e)
 	{
-		return _getErrorPage(500); // Internal server error
+		std::vector<std::string>	response;
+		
+		response.push_back(_getErrorPage(500)); // Internal server error
+		return response;
 	}
 }
 std::string readFileError(std::string const & path)
@@ -183,7 +201,7 @@ std::string readFileError(std::string const & path)
 	file.close();
 	return read.str();
 }
-std::string	HttpHandler::handleGET(const Request &req)
+std::vector<std::string>	HttpHandler::handleGET(const Request &req)
 {
 	LocationBlock	matchedLocation;
 
@@ -236,8 +254,10 @@ std::string	HttpHandler::handleGET(const Request &req)
 
 			response.setStatusLine("HTTP/1.1 200 OK");
 			response.setBody(directoryListing.str());
+			
 			response.setHeader("Content-Type", "text/html");
-			return response.toString();
+			// return response.toString();
+			return createResponseParts(req, response);
 		}
 	}
 
@@ -245,7 +265,7 @@ std::string	HttpHandler::handleGET(const Request &req)
 }
 
 // Adding a helper function for file requests
-std::string	HttpHandler::handleFileRequest(const std::string &filePath)
+std::vector<std::string>	HttpHandler::handleFileRequest(const std::string &filePath)
 {
 	Response	response;
 
@@ -274,7 +294,8 @@ std::string	HttpHandler::handleFileRequest(const std::string &filePath)
 		response.setStatusLine("HTTP/1.1 200 OK");
 		response.setBody(content);
 		response.setHeader("Content-Type", "text/html");
-		return response.toString();
+		// return response.toString();
+		return createResponseParts(Request(), response);
 	}
 
 	catch (const SystemCallError &e)
@@ -285,7 +306,7 @@ std::string	HttpHandler::handleFileRequest(const std::string &filePath)
 	}
 }
 
-std::string	HttpHandler::handlePOST(const Request &req)
+std::vector<std::string>	HttpHandler::handlePOST(const Request &req)
 {
 	std::string	contentType = req.getHeader("Content-Type");
 	Response	response;
@@ -344,7 +365,8 @@ std::string	HttpHandler::handlePOST(const Request &req)
 		response.setStatusLine("HTTP/1.1 400 Bad Request");
 		response.setBody("Empty body in POST request\n");
 	}
-	return response.toString();
+	// return response.toString();
+	return createResponseParts(req, response);
 }
 
 std::string	HttpHandler::extractFilename(const std::string& disposition)
@@ -369,7 +391,7 @@ void	HttpHandler::saveFile(const std::string &filename, const std::string &fileD
 	file.close();
 }
 
-std::string	HttpHandler::handleDELETE(const Request &req)
+std::vector<std::string>	HttpHandler::handleDELETE(const Request &req)
 {
 	std::string filePath = _rootDir + req.getPath();
 	Response	response;
@@ -389,10 +411,89 @@ std::string	HttpHandler::handleDELETE(const Request &req)
 		response.setStatusLine("HTTP/1.1 404 Not Found");
 		response.setBody("File not found\n");
 	}
-	return response.toString();
+	// return response.toString();
+	return createResponseParts(req, response);
 }
 
-std::string HttpHandler::handleCGI(const Request &req)
+std::vector<std::string>	 HttpHandler::handleCGI(const Request &req)
 {
 	return _cgiHandler.execute(req);
+}
+
+size_t	HttpHandler::getChunkSize(const Request &req)
+{
+		// std::string validation = _validateRequest(req);
+		// if (validation != "Ok")
+		// 	return validation;
+
+		LocationBlock	matchedLocation;
+
+		for (const auto &location : _serverBlock.getLocations())
+		{
+			if (req.getPath().find(location.getLocation()) == 0)
+			{
+				matchedLocation = location;
+				break;
+			}
+		}
+
+		// if (matchedLocation.getLocation().empty())
+		// 	return _getErrorPage(404); // Not found
+		
+		if (matchedLocation.getClientMaxBodySize() > 0)
+			return (matchedLocation.getClientMaxBodySize());
+		else
+			return (_serverBlock.getClientMaxBodySize());
+}
+
+std::vector<std::string>	HttpHandler::createResponseParts(const Request &req, Response &res)
+{
+	std::string	connection;
+
+	if (req.getKeepAlive())
+		connection = "keep-alive";
+	else
+		connection = "close";
+
+	// std::string	header;
+	std::string body = res.getBody();
+	size_t		maxBodySize = getChunkSize(req);
+
+	if (body.size() > maxBodySize)
+	{
+		std::string	transferEncoding = "Transfer-Encoding: chunked\r\n";
+		
+		_responseParts.push_back(res.getStatusLine() + "\r\n");
+		res.setHeader("Transfer-Encoding", "chunked");
+		res.setHeader("Connection", connection);
+		_responseParts.push_back(res.getHeaders());
+
+		size_t				chunkSize;
+		std::string			chunk;
+		std::stringstream	sstream;
+
+		while (body.size() > 0)
+		{
+			chunkSize = std::min(body.size(), maxBodySize);
+			chunk = body.substr(0, chunkSize);
+			sstream.str("");
+			sstream << std::hex << chunkSize << "\r\n";
+			sstream << chunk << "\r\n";
+			res.setBody(sstream.str());
+			_responseParts.push_back(sstream.str());
+			body = body.substr(chunkSize);
+		}
+		_responseParts.push_back("0\r\n\r\n");
+	}
+	else
+	{
+		std::string contentLength = "Content-Length: " + std::to_string(body.size()) + "\r\n";
+
+		_responseParts.push_back(res.getStatusLine());
+		res.setHeader("Content-Length", std::to_string(body.size()));
+		res.setHeader("Connection", connection);
+		_responseParts.push_back(res.getHeaders());
+		_responseParts.push_back(body);
+	}
+	return _responseParts;
 }

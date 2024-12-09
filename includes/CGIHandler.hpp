@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGIHandler.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:52:42 by asohrabi          #+#    #+#             */
-/*   Updated: 2024/12/04 16:43:17 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 19:02:38 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,13 +28,13 @@
 class CGIHandler
 {
 	private:
-		ServerBlock	&_serverBlock;
+		ServerBlock					&_serverBlock;
 
 	public:
 		CGIHandler(ServerBlock &serverConfig);
 		~CGIHandler();
 
-		std::string	execute(const Request &req);
+		std::vector<std::string>	execute(const Request &req);
 };
 
 

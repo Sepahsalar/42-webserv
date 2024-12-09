@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientConnection.cpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: asohrabi <asohrabi@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:33:24 by nnourine          #+#    #+#             */
-/*   Updated: 2024/12/04 15:21:00 by asohrabi         ###   ########.fr       */
+/*   Updated: 2024/12/09 19:31:25 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -361,9 +361,12 @@ void ClientConnection::createResponseParts()
 	// std::string method = requestmethod(request);
 	// std::string uri = requestURI(request);
 
-	std::string	getResponse = responseMaker->createResponse(request);
-	responseParts.push_back(getResponse);
+	std::vector<std::string>	getResponse = responseMaker->createResponse(request);
+	// size_t		maxBodySize = responseMaker->getChunkSize(request);
+	responseParts.clear();
+	responseParts  = getResponse;
 	status = READYTOSEND;
+	std::cout << "Response created for client " << index + 1 << std::endl;
 
 	// 	std::string path = findPath(method, uri);
 	// 	std::string body = readFile(path);
@@ -378,39 +381,34 @@ void ClientConnection::createResponseParts()
 	// 		connection = "Connection: close\r\n";
 
 	// 	std::string header;
-	// 	if (body.size() > maxBodySize)
+	// if (body.size() > maxBodySize)
+	// {
+	// 	std::string transferEncoding = "Transfer-Encoding: chunked\r\n";
+	// 	header = statusLine + contentType + transferEncoding + connection;
+	// 	responseParts.push_back(header + "\r\n");
+	// 	size_t chunkSize;
+	// 	std::string chunk;
+	// 	std::stringstream sstream;
+	// 	while (body.size() > 0)
 	// 	{
-	// 		std::string transferEncoding = "Transfer-Encoding: chunked\r\n";
-	// 		header = statusLine + contentType + transferEncoding + connection;
-	// 		responseParts.push_back(header + "\r\n");
-	// 		size_t chunkSize;
-	// 		std::string chunk;
-	// 		std::stringstream sstream;
-	// 		while (body.size() > 0)
-	// 		{
-	// 			chunkSize = std::min(body.size(), maxBodySize);
-	// 			chunk = body.substr(0, chunkSize);
-	// 			sstream.str("");
-	// 			sstream << std::hex << chunkSize << "\r\n";
-	// 			sstream << chunk << "\r\n";
-	// 			responseParts.push_back(sstream.str());
-	// 			body = body.substr(chunkSize);
-	// 		}
-	// 		responseParts.push_back("0\r\n\r\n");
+	// 		chunkSize = std::min(body.size(), maxBodySize);
+	// 		chunk = body.substr(0, chunkSize);
+	// 		sstream.str("");
+	// 		sstream << std::hex << chunkSize << "\r\n";
+	// 		sstream << chunk << "\r\n";
+	// 		responseParts.push_back(sstream.str());
+	// 		body = body.substr(chunkSize);
 	// 	}
-	// 	else
-	// 	{
-	// 		std::string contentLength = "Content-Length: " + std::to_string(body.size()) + "\r\n";
-	// 		header = statusLine + contentType + contentLength + connection;
-	// 		responseParts.push_back(header + "\r\n" + body);
-	// 	}
-	// 	status = READYTOSEND;
-	// 	std::cout << "Response created for client " << index + 1 << std::endl;
+	// 	responseParts.push_back("0\r\n\r\n");
+	// }
+	// else
+	// {
+	// 	std::string contentLength = "Content-Length: " + std::to_string(body.size()) + "\r\n";
+	// 	header = statusLine + contentType + contentLength + connection;
+	// 	responseParts.push_back(header + "\r\n" + body);
 	// }
 
-	status = READYTOSEND;
-	std::cout << "Response created for client " << index + 1 << std::endl;
-
+	// status = READYTOSEND;
 }
 
 time_t getCurrentTime()
