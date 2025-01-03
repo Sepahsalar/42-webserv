@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:28 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/03 14:37:18 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/03 16:10:00 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -252,7 +252,10 @@ void Server::receiveMessage(int index)
 		printMessage("Received message from client " + std::to_string(index + 1));
 		_clients[index].setCurrentTime();
 		if (_clients[index].status == WAITFORREQUEST)
+		{
+			_clients[index].request.clear();
 			_clients[index].status = RECEIVINGUNKOWNTYPE;
+		}
 		stringBuffer = buffer;
 		_clients[index].request += stringBuffer;
 		_clients[index].checkRequestSize();
@@ -260,10 +263,13 @@ void Server::receiveMessage(int index)
 			_clients[index].findRequestType();
 		if (_clients[index].finishedReceiving())
 		{
+			std::cout << "Finished receiving" << std::endl;
 			if (_clients[index].status == RECEIVINGCHUNKED)
 				_clients[index].handleChunkedEncoding();
 			_clients[index].status = RECEIVED;
 		}
+		else
+			handleNotFinishedRequests(index);
 	}
 }
 
@@ -297,8 +303,8 @@ void Server::handleTimeout(int index)
 	printMessage("Client " + std::to_string(index + 1) + " timed out");
 	if (_clients[index].request.empty() == false)
 	{
-		_clients[index].status = RECEIVED;
-		_clients[index].createResponseParts();
+		std::cout << "Changing request to bad request because of timeout" << std::endl;
+		_clients[index].changeRequestToBadRequest();
 	}
 	else
 		closeClientSocket(index);
@@ -392,7 +398,10 @@ void Server::handleClientEvents(struct epoll_event const & event)
 	else
 	{
 		if (getClientStatus(event) < RECEIVED &&(event.events & EPOLLIN))
+		{
+			std::cout << "EPOLLIN triggered for clinet index " << getClientIndex(event) << " that has a status before fully recieved request" << std::endl;
 			receiveMessage(getClientIndex(event));
+		}
 		else if (getClientStatus(event) == READYTOSEND &&(event.events & EPOLLOUT))
 		{
 			int index = getClientIndex(event);
@@ -484,10 +493,90 @@ void Server::handleSocketEvents()
 	}
 }
 
+void Server::handleNotFinishedRequests()
+{
+	for (int index = 0; (index < MAX_CONNECTIONS && signal_status != SIGINT) ; ++index)
+	{
+		if (_clients[index].status > WAITFORREQUEST && _clients[index].status < RECEIVED)
+		{
+			char buffer[16384] = {};
+			std::string stringBuffer;
+			ssize_t bytes_received;
+			bytes_received = recv(_clients[index].fd, buffer, sizeof(buffer), MSG_DONTWAIT);
+			if (bytes_received == 0)
+			{
+				printMessage("Client " + std::to_string(index + 1) + " disconnected");
+				closeClientSocket(index);
+			}
+			else if(bytes_received > 0)
+			{
+				printMessage("Received message from client " + std::to_string(index + 1));
+				_clients[index].setCurrentTime();
+				stringBuffer = buffer;
+				_clients[index].request += stringBuffer;
+				_clients[index].checkRequestSize();
+				if (_clients[index].status == RECEIVINGUNKOWNTYPE)
+					_clients[index].findRequestType();
+				if (_clients[index].finishedReceiving())
+				{
+					std::cout << "Finished receiving" << std::endl;
+					if (_clients[index].status == RECEIVINGCHUNKED)
+						_clients[index].handleChunkedEncoding();
+					_clients[index].status = RECEIVED;
+				}
+			}
+		}
+	}
+}
+
+void Server::handleNotFinishedRequests(int index)
+{
+	if (_clients[index].status > WAITFORREQUEST && _clients[index].status < RECEIVED)
+	{
+		std::cout << "Handling not finished requests for client " << index + 1 << std::endl;
+		while (true)
+		{
+			char buffer[16384] = {};
+			std::string stringBuffer;
+			ssize_t bytes_received;
+			bytes_received = recv(_clients[index].fd, buffer, sizeof(buffer), MSG_DONTWAIT);
+			if (bytes_received == 0)
+			{
+				printMessage("Client " + std::to_string(index + 1) + " disconnected");
+				closeClientSocket(index);
+			}
+			else if(bytes_received > 0)
+			{
+				printMessage("Received message from client " + std::to_string(index + 1));
+				_clients[index].setCurrentTime();
+				stringBuffer = buffer;
+				_clients[index].request += stringBuffer;
+				_clients[index].checkRequestSize();
+				if (_clients[index].status == RECEIVINGUNKOWNTYPE)
+					_clients[index].findRequestType();
+				if (_clients[index].finishedReceiving())
+				{
+					std::cout << "Finished receiving" << std::endl;
+					if (_clients[index].status == RECEIVINGCHUNKED)
+						_clients[index].handleChunkedEncoding();
+					_clients[index].status = RECEIVED;
+				}
+			}
+			else
+			{
+				std::cout << "No data (-1) received after the initial recv triggered by EPOLLIN" << std::endl;
+				break;
+			}
+		}
+	}
+
+}
+
 void Server::handleEvents()
 {
 	prepareResponses();
 	handleSocketEvents();
+	// handleNotFinishedRequests();
 	handleTimeouts();
 	
 }

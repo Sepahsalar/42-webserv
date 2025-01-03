@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:33:24 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/03 14:36:53 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/03 16:13:57 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,8 @@ bool ClientConnection::finishedReceivingNonChunked()
 	try
 	{
 		contentLength = std::stoul(contentLengthString);
+		std::cout << "Content length: " << contentLength << std::endl;
+		std::cout << "Currently length: " << request.size() << " which " << receivedLength() << " is body" << std::endl;
 	}
 	catch(...)
 	{
@@ -69,6 +71,7 @@ bool ClientConnection::finishedReceivingNonChunked()
 	}
 	if (receivedLength() == contentLength)
 		return true;
+	std::cout << "Received less data than expected so it is not finished" << std::endl;
 	return false;
 }
 
@@ -86,7 +89,10 @@ bool ClientConnection::finishedReceiving()
 	else if (status == RECEIVINGCHUNKED)
 		return finishedReceivingChunked();
 	else
+	{
+		std::cout << "Checking finished receiving non-chunked" << std::endl;
 		return finishedReceivingNonChunked();
+	}
 }
 
 size_t ClientConnection::receivedLength() const
@@ -108,10 +114,17 @@ void ClientConnection::findRequestType()
 	}
 	else
 	{
+		std::cout << "End of header found" << std::endl;
 		if (request.find("Transfer-Encoding: chunked") != std::string::npos)
+		{
+			std::cout << "Chunked encoding found" << std::endl;
 			status = RECEIVINGCHUNKED;
+		}
 		else
+		{
+			std::cout << "Non-chunked encoding found" << std::endl;
 			status = RECEIVINGNONCHUNKED;
+		}
 	}
 }
 

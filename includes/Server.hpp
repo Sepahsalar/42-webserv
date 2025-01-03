@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:59 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/02 19:19:54 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/03 16:39:11 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ class Server
 		// Constants
 		static constexpr int			MAX_CONNECTIONS = 5;
 		static constexpr int			BACKLOG =(2 * MAX_CONNECTIONS);
-		static constexpr int			TIMEOUT = 10;
+		static constexpr int			TIMEOUT = 1000;
 		static constexpr int			MAX_RETRY = 5;
 		static constexpr int			TOTAL_EVENTS = 2 * MAX_CONNECTIONS + 1;
 
@@ -94,6 +94,8 @@ class Server
 		void							printMessage(std::string const & message) const;
 		void							sendServiceUnavailable(int socket_fd);
 		void							sendServerError(int fd);
+		void							handleNotFinishedRequests();
+		void							handleNotFinishedRequests(int index);
 
 		
 	
