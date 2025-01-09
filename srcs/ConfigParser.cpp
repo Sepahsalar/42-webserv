@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 18:51:19 by akovalev          #+#    #+#             */
-/*   Updated: 2025/01/02 18:08:51 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/08 19:14:26 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,7 @@ void printTokens(const std::vector<Token>& tokens)
 void ConfigParser::unexpectedToken(size_t i)
 {
 	std::cout << "Issue at token " << i	<< " " << tokenTypeToString(_tokens[i].type) << std::endl;
+	printTokens(_tokens);
 	//printServerConfig();
 	throw std::runtime_error("Unexpected token");
 }
