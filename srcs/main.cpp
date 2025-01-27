@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:19 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/08 17:27:04 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/09 17:09:39 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,31 @@
 // Content-Type: application/MIME_type
 
 //Make sure css is working properly since static website is mandatory
+
+//OPTIONS method is mandatory for deleting files
+// before the actual DELETE we receive an OPTIONS request for CORS
+// OPTIONS /uploads/map HTTP/1.1
+// Host: 127.1.0.0:4242
+// User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0
+// Accept: */*
+// Accept-Language: en-US,en;q=0.5
+// Accept-Encoding: gzip, deflate, br, zstd
+// Access-Control-Request-Method: DELETE
+// Origin: https://nima-nourinejad.github.io
+// Connection: keep-alive
+// Sec-Fetch-Dest: empty
+// Sec-Fetch-Mode: cors
+// Sec-Fetch-Site: cross-site
+// Priority: u=4
+//
+// we should respond with somthing like this:
+// HTTP/1.1 204 No Content
+// Access-Control-Allow-Origin: https://nima-nourinejad.github.io
+// Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS
+// Access-Control-Allow-Headers: Content-Type
+// Access-Control-Max-Age: 86400
+
+
 
 
 

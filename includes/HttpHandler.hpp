@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:39:07 by asohrabi          #+#    #+#             */
-/*   Updated: 2025/01/03 13:33:04 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/09 16:35:57 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,7 @@ class HttpHandler
 		Response					handleFileRequest(const Request &req, const std::string &filePath);
 		Response					handlePOST(const Request &req);
 		Response					handleDELETE(const Request &req);
+		Response					handleOPTIONS(const Request &req);
 		Response					handleCGI(const Request &req);
 
 		CGIHandler					getCGIHandler() const { return _cgiHandler; } // maybe not needed

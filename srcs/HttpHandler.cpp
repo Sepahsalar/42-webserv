@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 16:39:26 by asohrabi          #+#    #+#             */
-/*   Updated: 2025/01/03 18:17:48 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/09 16:48:19 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,7 +134,8 @@ Response	HttpHandler::handleRequest(const Request &req)
 
 		for (const auto &location : _serverBlock.getLocations())
 		{
-			if (req.getPath() == location->getLocation())
+			if (req.getPath().size() >= location->getLocation().size() && req.getPath().substr(0, location->getLocation().size()) == location->getLocation())
+			// if (req.getPath() == location->getLocation())
 			{
 				matchedLocation = location;
 				break;
@@ -223,6 +224,8 @@ Response	HttpHandler::handleRequest(const Request &req)
 			return handlePOST(req);
 		else if (req.getMethod() == "DELETE")
 			return handleDELETE(req);
+		else if (req.getMethod() == "OPTIONS")
+			return handleOPTIONS(req);
 
 		return getErrorPage(req, 405); // Method not allowed
 	}
@@ -473,6 +476,32 @@ void	HttpHandler::saveFile(const std::string &filename, const std::string &fileD
 	file.close();
 }
 
+Response	HttpHandler::handleOPTIONS(const Request &req)
+{
+	// std::string filePath = _rootDir + req.getPath();
+	(void)req;
+	Response	response;
+
+	response.setStatusLine("HTTP/1.1 204 " + getStatusMessage(204) + "\r\n");
+	// if (unlink(_filePath.c_str()) == 0)
+	// {
+	// 	response.setStatusLine("HTTP/1.1 204 " + getStatusMessage(200) + "\r\n");
+	// 	// response.setBody("File deleted successfully\n");
+	// }
+	// else if (errno == EACCES)
+	// {
+	// 	response.setStatusLine("HTTP/1.1 403 " + getStatusMessage(403) + "\r\n");
+	// 	// response.setBody("Permission denied\n");
+	// }
+	// else if (errno == ENOENT)
+	// {
+	// 	response.setStatusLine("HTTP/1.1 404 " + getStatusMessage(404) + "\r\n");
+	// 	// response.setBody("File not found\n");
+	// }
+	return response;
+	// return response.toString();
+}
+
 Response	HttpHandler::handleDELETE(const Request &req)
 {
 	// std::string filePath = _rootDir + req.getPath();
@@ -482,17 +511,17 @@ Response	HttpHandler::handleDELETE(const Request &req)
 	if (unlink(_filePath.c_str()) == 0)
 	{
 		response.setStatusLine("HTTP/1.1 200 " + getStatusMessage(200) + "\r\n");
-		response.setBody("File deleted successfully\n");
+		// response.setBody("File deleted successfully\n");
 	}
 	else if (errno == EACCES)
 	{
 		response.setStatusLine("HTTP/1.1 403 " + getStatusMessage(403) + "\r\n");
-		response.setBody("Permission denied\n");
+		// response.setBody("Permission denied\n");
 	}
 	else if (errno == ENOENT)
 	{
 		response.setStatusLine("HTTP/1.1 404 " + getStatusMessage(404) + "\r\n");
-		response.setBody("File not found\n");
+		// response.setBody("File not found\n");
 	}
 	return response;
 	// return response.toString();

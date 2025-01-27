@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:33:24 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/08 14:33:57 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/01/09 16:28:59 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -249,6 +249,7 @@ void ClientConnection::createResponseParts()
 					logError("Child process for creating response failed: " + errorMessage);
 				}
 				std::string fullMessage = maxBodySizeString + statusLine + rawHeader + "\r\n" + body;
+				std::cout << "_________________________________________Resonse created, sending to parent" << std::endl;
 				write(pipe[1], fullMessage.c_str(), fullMessage.size());
 				close(pipe[1]);
 				exit(0);
@@ -364,6 +365,11 @@ void ClientConnection::accumulateResponseParts()
 	chunckBody(statusLine, rawHeader, connection, maxBodySize);
 	errorStatus = 0;
 	status = READYTOSEND;
+	std::cout << "^^^^^^^^^^^^^^^^^^^^^^^^prepared response" << std::endl;
+	for (size_t i = 0; i < responseParts.size(); i++)
+	{
+		std::cout << responseParts[i] << std::endl;
+	}
 }
 
 time_t getCurrentTime()
