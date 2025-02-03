@@ -6,12 +6,12 @@
 #    By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/22 16:45:01 by asohrabi          #+#    #+#              #
-#    Updated: 2025/02/03 15:09:00 by nnourine         ###   ########.fr        #
+#    Updated: 2025/02/03 15:29:00 by nnourine         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 # Compiler and flags
-CXX = c++ -fsanitize=thread -g
+CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++17 -Iincludes #changed from -std=c++11 to -std=c++17 for filesystem functions of parser
 
 SRCS_DIR = srcs
