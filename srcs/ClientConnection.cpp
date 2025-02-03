@@ -6,14 +6,14 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:33:24 by nnourine          #+#    #+#             */
-/*   Updated: 2025/02/03 14:50:50 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/03 16:53:38 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ClientConnection.hpp"
 
 ClientConnection::ClientConnection()
-    : index(-1), fd(-1), status(DISCONNECTED), keepAlive(true), maxBodySize(0),responseMaker(nullptr), pipe{ -1, -1 }, pid(-1), errorStatus(0), isCGI(false), isThreadDone(false)
+    : index(-1), fd(-1), status(DISCONNECTED), keepAlive(true),responseMaker(nullptr), pipe{ -1, -1 }, pid(-1), errorStatus(0), isCGI(false), isThreadDone(false)
 	{
 		eventData.type = CLIENT;
 		eventData.fd = -1;
@@ -191,6 +191,8 @@ void ClientConnection::handleChunkedEncoding()
 	}
 }
 
+
+///////////////////////////////////////////below should be deleted
 void ClientConnection::setPlain500Response()
 {
 	size_t		maxBodySize;
@@ -209,20 +211,43 @@ void ClientConnection::setPlain500Response()
 
 void ClientConnection::createResponseParts_nonCGI()
 {
+	{
+		std::lock_guard<std::mutex> lock(idMutex);
+	}
 	std::string statusLine, rawHeader;
+	size_t maxBodySize;
+	bool validThread = false;
 	try
 	{
-		maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
+		{
+			{
+				std::lock_guard<std::mutex> lock(idMutex);
+				validThread = (std::this_thread::get_id() == validThreadId);
+				if (validThread)
+					maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
+			}
+			if (!validThread)
+				return;
+		}
 		Response	response;
 		if (!errorStatus)
-			response = responseMaker->createResponse(request);
+		{
+			std::lock_guard<std::mutex> lock(idMutex);
+			validThread = (std::this_thread::get_id() == validThreadId);
+			if (validThread)
+				response = responseMaker->createResponse(request);
+		}
 		else
 		{
-			Request		req(request, errorStatus);
-			
-			response = responseMaker->getErrorPage(req, errorStatus);
+			std::lock_guard<std::mutex> lock(idMutex);
+			validThread = (std::this_thread::get_id() == validThreadId);
+			if (validThread)
+			{
+				Request		req(request, errorStatus);
+				response = responseMaker->getErrorPage(req, errorStatus);
+			}
 		}
-		if (getPassedTime() > THREAD_TIMEOUT)
+		if (!validThread)
 			return;
 		body = response.getBody();
 		statusLine = response.getStatusLine();
@@ -260,9 +285,12 @@ void ClientConnection::createResponseParts()
 			status = PREPARINGRESPONSE;			
 			if (!isCGI)
 			{
-				// createResponseParts_nonCGI();
 				setCurrentTime();
-				responseThread = std::thread(&ClientConnection::createResponseParts_nonCGI, this);
+				{
+					std::lock_guard<std::mutex> lock(idMutex);
+					responseThread = std::thread(&ClientConnection::createResponseParts_nonCGI, this);
+					validThreadId = responseThread.get_id();
+				}
 				
 				
 				

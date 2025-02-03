@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:28 by nnourine          #+#    #+#             */
-/*   Updated: 2025/02/03 15:02:37 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/03 16:27:51 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,7 +196,13 @@ void Server::closeClientSocket(int index)
 				_clients[index].pipe[1] = -1;
 			}
 			if (_clients[index].responseThread.joinable())
+			{
+				{
+					std::lock_guard<std::mutex> lock(_clients[index].idMutex);
+					_clients[index].validThreadId = std::thread::id();
+				}
 				_clients[index].responseThread.detach();
+			}
 			_clients[index].keepAlive = true;
 			_clients[index].connectTime = 0;
 			_clients[index].request.clear();
@@ -386,17 +392,18 @@ void Server::handleTimeouts()
 			if (_clients[i].getPassedTime() > ClientConnection::THREAD_TIMEOUT)
 			{
 				bool done;
-				bool joinable;
 				{
 					std::lock_guard<std::mutex> lock(_clients[i].mutex);
 					done = _clients[i].isThreadDone;
-					joinable = _clients[i].responseThread.joinable();
 				}
 				if (done == false)
 				{
-					if (joinable)
+					if (_clients[i].responseThread.joinable())
 					{
-						std::lock_guard<std::mutex> lock(_clients[i].mutex);
+						{
+							std::lock_guard<std::mutex> lock(_clients[i].idMutex);
+							_clients[i].validThreadId = std::thread::id();
+						}
 						_clients[i].responseThread.detach();
 					}
 					_clients[i].errorStatus = 504;
@@ -550,7 +557,6 @@ bool Server::readyToSend(struct epoll_event const & event)
 			return true;
 		if (_clients[index].isCGI == false && _clients[index].status == PREPARINGRESPONSE)
 		{
-			std::cout << "i am here" << std::endl;
 			bool done = false;
 			{
 				std::lock_guard<std::mutex> lock(_clients[index].mutex);
