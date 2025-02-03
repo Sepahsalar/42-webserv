@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:59 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/31 15:46:03 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/03 13:45:07 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class Server
     private:
 
 		// Constants
-		int			TIMEOUT = 30;
+		int 		TIMEOUT = 30;
 		int			MAX_RETRY = 3;
 
 		// Private Attributes
@@ -38,7 +38,7 @@ class Server
 		struct sockaddr_in				_address;
 		Configuration					_config;
 		int								_num_clients;
-		std::vector<ClientConnection>	_clients;
+		
 		
 		int								_retry;
 		Response						_response;
@@ -54,6 +54,7 @@ class Server
 		void							createClientConnections(ServerBlock & serverBlock);
 		void							receiveMessage(int index);
 		void							sendResponseParts(int index);
+		
 
 		// Event Handling Methods
 		int								waitForEvents();
@@ -73,6 +74,7 @@ class Server
 		void							handleListeningEvents(struct epoll_event const & event);
 		void							handlePipeEvents(struct epoll_event const & event);
 		int								eventType(struct epoll_event const & event) const;
+		bool							readyToSend(struct epoll_event const & event);
 		
 		// Signal Methods
 		void							applyCustomSignal();
@@ -110,6 +112,7 @@ class Server
 		std::vector<struct epoll_event> _events;
     	std::vector<struct epoll_event> _ready;
 		int								backlog =(2 * max_connections);
+		std::vector<ClientConnection>	_clients;
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:28 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/31 18:20:10 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/03 15:02:37 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ Server::Server(ServerBlock & serverBlock, int port, int max_fd)
     : _socket_fd(-1), _fd_epoll(-1), _config(port, serverBlock.getHost(),
 	serverBlock.getClientMaxBodySize(), serverBlock.getServerName()), _num_clients(0)
 	, _responseMaker(serverBlock), fd_num(0), max_fd(max_fd), max_connections((max_fd - 1) / 2), total_events(max_fd),
-	_events(max_fd), _ready(max_fd)
+	_events(max_fd), _ready(max_fd), _clients(max_connections)
 {
 	
 	applyCustomSignal();
@@ -195,6 +195,8 @@ void Server::closeClientSocket(int index)
 				fd_num--;
 				_clients[index].pipe[1] = -1;
 			}
+			if (_clients[index].responseThread.joinable())
+				_clients[index].responseThread.detach();
 			_clients[index].keepAlive = true;
 			_clients[index].connectTime = 0;
 			_clients[index].request.clear();
@@ -379,6 +381,30 @@ void Server::handleTimeouts()
 			if (_clients[i].getPassedTime() > TIMEOUT)
 				handleTimeout(i);
 		}
+		if (_clients[i].isCGI == false && _clients[i].status == PREPARINGRESPONSE)
+		{
+			if (_clients[i].getPassedTime() > ClientConnection::THREAD_TIMEOUT)
+			{
+				bool done;
+				bool joinable;
+				{
+					std::lock_guard<std::mutex> lock(_clients[i].mutex);
+					done = _clients[i].isThreadDone;
+					joinable = _clients[i].responseThread.joinable();
+				}
+				if (done == false)
+				{
+					if (joinable)
+					{
+						std::lock_guard<std::mutex> lock(_clients[i].mutex);
+						_clients[i].responseThread.detach();
+					}
+					_clients[i].errorStatus = 504;
+					_clients[i].status = RECEIVED;					
+				}
+			}
+			
+		}
 	}
 }
 
@@ -514,6 +540,36 @@ void Server::handleErr(struct epoll_event const & event)
 	}
 }
 
+bool Server::readyToSend(struct epoll_event const & event)
+{
+	if (eventType(event) == CLIENT)
+	{
+		struct eventData * target =(struct eventData *)event.data.ptr;
+		int index = target->index;
+		if (_clients[index].isCGI == true && _clients[index].status == READYTOSEND)
+			return true;
+		if (_clients[index].isCGI == false && _clients[index].status == PREPARINGRESPONSE)
+		{
+			std::cout << "i am here" << std::endl;
+			bool done = false;
+			{
+				std::lock_guard<std::mutex> lock(_clients[index].mutex);
+				if (_clients[index].isThreadDone == true)
+					done = true;
+			}
+			if (done)
+			{
+				if (_clients[index].responseThread.joinable())
+					_clients[index].responseThread.join();
+				_clients[index].status = READYTOSEND;
+				return true;
+				
+			}
+		}
+	}
+	return false;
+}
+
 void Server::handleClientEvents(struct epoll_event const & event)
 {
 	if (event.events &(EPOLLHUP | EPOLLERR))
@@ -522,7 +578,7 @@ void Server::handleClientEvents(struct epoll_event const & event)
 	{
 		if (getClientStatus(event) < RECEIVED &&(event.events & EPOLLIN))
 			receiveMessage(getClientIndex(event));
-		else if (getClientStatus(event) == READYTOSEND &&(event.events & EPOLLOUT))
+		else if (readyToSend(event) &&(event.events & EPOLLOUT))
 		{
 			int index = getClientIndex(event);
 			int pipe_read_fd = _clients[index].pipe[0];
@@ -859,9 +915,9 @@ void Server::createClientConnections(ServerBlock & serverBlock)
 	(void)serverBlock;
 	for (int i = 0; i < max_connections; ++i)
 	{
-		_clients.push_back(ClientConnection());
+		// _clients.push_back(ClientConnection());
 		_clients[i].responseMaker = &_responseMaker;
-		_clients[0].maxBodySize = _config.maxBodySize;
+		// _clients[0].maxBodySize = _config.maxBodySize;
 	}
 	
 }

@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:51 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/31 16:10:06 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/03 14:04:50 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@
 #include "CGIHandler.hpp"
 #include "SocketException.hpp"
 #include "eventData.hpp"
+#include <mutex>
+#include <thread>
 
 enum ClientStatus
 {
@@ -52,6 +54,7 @@ class ClientConnection
 	const size_t				MAX_HEADER_SIZE = 3200768;
 	const size_t				MAX_REQUEST_SIZE = 100048576;
 	
+	
     public:
 
 	// Public Attributes
@@ -71,6 +74,9 @@ class ClientConnection
 	int							errorStatus;
 	struct eventData			pipeEventData;
 	bool						isCGI;
+	bool						isThreadDone;
+	std::mutex					mutex;
+	std::thread 				responseThread;
 
 	// Public Methods
 	ClientConnection();
@@ -89,6 +95,7 @@ class ClientConnection
 	void						grabChunkedHeader(std::string & unProcessed, std::string & header);
 	void						handleChunkedEncoding();
 	void						createResponseParts();
+	void						createResponseParts_nonCGI();
 	void						accumulateResponseParts();
 	time_t						getPassedTime() const;
 	void						setCurrentTime();
@@ -99,6 +106,8 @@ class ClientConnection
 	void						checkRequestSize();
 	void						readFromPipe();
 	void						setCGI();
+	static constexpr int THREAD_TIMEOUT = 30;
+	
 };
 
 #endif

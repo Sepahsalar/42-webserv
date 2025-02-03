@@ -6,14 +6,14 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:33:24 by nnourine          #+#    #+#             */
-/*   Updated: 2025/01/31 17:32:43 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/03 14:50:50 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ClientConnection.hpp"
 
 ClientConnection::ClientConnection()
-    : index(-1), fd(-1), status(DISCONNECTED), keepAlive(true), maxBodySize(0),responseMaker(nullptr), pipe{ -1, -1 }, pid(-1), errorStatus(0), isCGI(false)
+    : index(-1), fd(-1), status(DISCONNECTED), keepAlive(true), maxBodySize(0),responseMaker(nullptr), pipe{ -1, -1 }, pid(-1), errorStatus(0), isCGI(false), isThreadDone(false)
 	{
 		eventData.type = CLIENT;
 		eventData.fd = -1;
@@ -207,6 +207,50 @@ void ClientConnection::setPlain500Response()
 	status = READYTOSEND;
 }
 
+void ClientConnection::createResponseParts_nonCGI()
+{
+	std::string statusLine, rawHeader;
+	try
+	{
+		maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
+		Response	response;
+		if (!errorStatus)
+			response = responseMaker->createResponse(request);
+		else
+		{
+			Request		req(request, errorStatus);
+			
+			response = responseMaker->getErrorPage(req, errorStatus);
+		}
+		if (getPassedTime() > THREAD_TIMEOUT)
+			return;
+		body = response.getBody();
+		statusLine = response.getStatusLine();
+		rawHeader = response.getRawHeader();
+	}
+	catch(const std::exception& e)
+	{
+		statusLine = "HTTP/1.1 500 Internal Server Error\r\n";
+		rawHeader = "Content-Type: text/plain\r\n";
+		body = "500 Internal Server Error";
+		std::string errorMessage = e.what();
+		logError("Child process for creating response failed: " + errorMessage);
+	}
+	connectionType();
+	std::string connection;
+	if (keepAlive)
+		connection = "Connection: keep-alive\r\n";
+	else
+		connection = "Connection: close\r\n";
+	chunckBody(statusLine, rawHeader, connection, maxBodySize);
+	errorStatus = 0;
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		isThreadDone = true;
+	}
+	
+}
+
 void ClientConnection::createResponseParts()
 {
 	try{
@@ -216,43 +260,10 @@ void ClientConnection::createResponseParts()
 			status = PREPARINGRESPONSE;			
 			if (!isCGI)
 			{
-				std::string statusLine, rawHeader;
-				try
-				{
-					maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
-					Response	response;
-					if (!errorStatus)
-						response = responseMaker->createResponse(request);
-					else
-					{
-						Request		req(request, errorStatus);
-						
-						response = responseMaker->getErrorPage(req, errorStatus);
-					}
-					body = response.getBody();
-					statusLine = response.getStatusLine();
-					rawHeader = response.getRawHeader();
-				}
-				catch(const std::exception& e)
-				{
-					statusLine = "HTTP/1.1 500 Internal Server Error\r\n";
-					rawHeader = "Content-Type: text/plain\r\n";
-					body = "500 Internal Server Error";
-					std::string errorMessage = e.what();
-					logError("Child process for creating response failed: " + errorMessage);
-				}
-				connectionType();
-				std::string connection;
-				if (keepAlive)
-					connection = "Connection: keep-alive\r\n";
-				else
-					connection = "Connection: close\r\n";
-				chunckBody(statusLine, rawHeader, connection, maxBodySize);
-				errorStatus = 0;
-				status = READYTOSEND;
-				std::cout << "Response created" << std::endl;
-				for (size_t i = 0; i < responseParts.size(); i++)
-					std::cout << responseParts[i] << std::endl;
+				// createResponseParts_nonCGI();
+				setCurrentTime();
+				responseThread = std::thread(&ClientConnection::createResponseParts_nonCGI, this);
+				
 				
 				
 			}

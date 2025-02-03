@@ -3,15 +3,15 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: akovalev <akovalev@student.42.fr>          +#+  +:+       +#+         #
+#    By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/10/22 16:45:01 by asohrabi          #+#    #+#              #
-#    Updated: 2024/12/09 19:03:50 by akovalev         ###   ########.fr        #
+#    Updated: 2025/02/03 15:09:00 by nnourine         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 # Compiler and flags
-CXX = c++
+CXX = c++ -fsanitize=thread -g
 CXXFLAGS = -Wall -Wextra -Werror -std=c++17 -Iincludes #changed from -std=c++11 to -std=c++17 for filesystem functions of parser
 
 SRCS_DIR = srcs
