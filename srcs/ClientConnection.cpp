@@ -6,14 +6,14 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:33:24 by nnourine          #+#    #+#             */
-/*   Updated: 2025/02/04 13:23:39 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/04 16:54:24 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ClientConnection.hpp"
 
 ClientConnection::ClientConnection()
-    : index(-1), fd(-1), status(DISCONNECTED), keepAlive(true),responseMaker(nullptr), pipe{ -1, -1 }, pid(-1), errorStatus(0), isCGI(false)
+    : index(-1), fd(-1), status(DISCONNECTED), keepAlive(true), pipe{ -1, -1 }, pid(-1), errorStatus(0), isCGI(false)
 	{
 		eventData.type = CLIENT;
 		eventData.fd = -1;
@@ -196,14 +196,14 @@ void ClientConnection::createResponseParts_nonCGI()
 	try
 	{
 		std::string statusLine, rawHeader;
-		size_t maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
+		size_t maxBodySize = responseMaker.getMaxBodySize(request, errorStatus);
 		Response	response;
 		if (!errorStatus)
-			response = responseMaker->createResponse(request);
+			response = responseMaker.createResponse(request);
 		else
 		{
 			Request		req(request, errorStatus);
-			response = responseMaker->getErrorPage(req, errorStatus);
+			response = responseMaker.getErrorPage(req, errorStatus);
 		}
 		body = response.getBody();
 		statusLine = response.getStatusLine();
@@ -216,7 +216,6 @@ void ClientConnection::createResponseParts_nonCGI()
 			connection = "Connection: close\r\n";
 		chunckBody(statusLine, rawHeader, connection, maxBodySize);
 		errorStatus = 0;
-		status = READYTOSEND;
 	}
 	catch(const std::exception& e)
 	{
@@ -236,9 +235,9 @@ void ClientConnection::CGI_child()
 	try
 	{
 		
-		maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
+		maxBodySize = responseMaker.getMaxBodySize(request, errorStatus);
 		maxBodySizeString = std::to_string(maxBodySize) + "\r\n";
-		response = responseMaker->createResponse(request);
+		response = responseMaker.createResponse(request);
 		body = response.getBody();
 		statusLine = response.getStatusLine();
 		rawHeader = response.getRawHeader();
@@ -249,10 +248,10 @@ void ClientConnection::CGI_child()
 		logError("Child process for creating response failed: " + errorMessage);
 		try
 		{
-			maxBodySize = responseMaker->getMaxBodySize(request, errorStatus);
+			maxBodySize = responseMaker.getMaxBodySize(request, errorStatus);
 			maxBodySizeString = std::to_string(maxBodySize) + "\r\n";
 			Request		req(request, errorStatus);
-			response = responseMaker->getErrorPage(req, errorStatus);
+			response = responseMaker.getErrorPage(req, errorStatus);
 			body = response.getBody();
 			statusLine = response.getStatusLine();
 			rawHeader = response.getRawHeader();
@@ -290,11 +289,17 @@ void ClientConnection::createResponseParts_CGI()
 
 void ClientConnection::futureThread_prepare_response()
 {
-	future = std::async(std::launch::async, &ClientConnection::createResponseParts_nonCGI, this);
+	std::future <void> future = std::async(std::launch::async, &ClientConnection::createResponseParts_nonCGI, this);
 	if (future.wait_for(NON_CGI_TIMEOUT) == std::future_status::timeout)
+	{
 		changeRequestToRequestTimeout();
+	}
 	else
 		future.get();
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		threadIsDone = true;
+	}
 }
 
 void ClientConnection::createResponseParts()
@@ -304,7 +309,13 @@ void ClientConnection::createResponseParts()
 	responseParts.clear();
 	status = PREPARINGRESPONSE;	
 	if (!isCGI)
-		futureThread_prepare_response();
+	{
+		threadIsDone = false;
+		// if (!thread)
+        //     thread = std::make_unique<std::thread>(&ClientConnection::futureThread_prepare_response, this);
+		thread = std::thread(&ClientConnection::futureThread_prepare_response, this);
+		// futureThread_prepare_response();
+	}
 	else
 		createResponseParts_CGI();
 }
@@ -462,5 +473,5 @@ void ClientConnection::checkRequestSize()
 void ClientConnection::setCGI()
 {
 	Request req(request, errorStatus);
-	isCGI= (!errorStatus && responseMaker->findMatchedLocation(req) && !((responseMaker->findMatchedLocation(req))->getCgiPath().empty()));
+	isCGI= (!errorStatus && responseMaker.findMatchedLocation(req) && !((responseMaker.findMatchedLocation(req))->getCgiPath().empty()));
 }

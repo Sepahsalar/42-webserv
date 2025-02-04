@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:59 by nnourine          #+#    #+#             */
-/*   Updated: 2025/02/03 17:07:55 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/04 15:03:18 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,7 @@ class Server
 		void							handleListeningEvents(struct epoll_event const & event);
 		void							handlePipeEvents(struct epoll_event const & event);
 		int								eventType(struct epoll_event const & event) const;
+		bool							readyToSend(struct epoll_event const & event);
 		
 		// Signal Methods
 		void							applyCustomSignal();

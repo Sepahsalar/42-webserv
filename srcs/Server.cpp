@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:28 by nnourine          #+#    #+#             */
-/*   Updated: 2025/02/03 18:39:40 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/04 16:56:49 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -517,6 +517,34 @@ void Server::handleErr(struct epoll_event const & event)
 	}
 }
 
+bool Server::readyToSend(struct epoll_event const & event)
+{
+	if (eventType(event) == CLIENT)
+	{
+		struct eventData * target =(struct eventData *)event.data.ptr;
+		int index = target->index;
+		if (_clients[index].isCGI == true && _clients[index].status == READYTOSEND)
+			return true;
+		if (_clients[index].isCGI == false && _clients[index].status == PREPARINGRESPONSE)
+		{
+			bool done = false;
+			{
+				std::lock_guard<std::mutex> lock(_clients[index].mutex);
+				done = _clients[index].threadIsDone;
+			}
+			if (done)
+			{
+				if (_clients[index].thread.joinable())
+					_clients[index].thread.join();
+				_clients[index].status = READYTOSEND;
+				return true;
+			}
+			return false;
+		}
+	}
+	return false;
+}
+
 void Server::handleClientEvents(struct epoll_event const & event)
 {
 	if (event.events &(EPOLLHUP | EPOLLERR))
@@ -525,7 +553,7 @@ void Server::handleClientEvents(struct epoll_event const & event)
 	{
 		if (getClientStatus(event) < RECEIVED &&(event.events & EPOLLIN))
 			receiveMessage(getClientIndex(event));
-		else if (getClientStatus(event) == READYTOSEND &&(event.events & EPOLLOUT))
+		else if (readyToSend(event) &&(event.events & EPOLLOUT))
 		{
 			int index = getClientIndex(event);
 			int pipe_read_fd = _clients[index].pipe[0];
@@ -859,11 +887,13 @@ void Server::makeSocketReusable()
 
 void Server::createClientConnections(ServerBlock & serverBlock)
 {
-	(void)serverBlock;
 	for (int i = 0; i < max_connections; ++i)
-	{
-		_clients[i].responseMaker = &_responseMaker;
-	}
+		_clients[i].responseMaker = HttpHandler(serverBlock);
+		// _clients.emplace_back(serverBlock);
+	// {
+	// 	ClientConnection conn(serverBlock);
+	// 	_clients.push_back(std::move(conn)); 
+	// }
 	
 }
 

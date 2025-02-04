@@ -6,7 +6,7 @@
 /*   By: nnourine <nnourine@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 09:37:51 by nnourine          #+#    #+#             */
-/*   Updated: 2025/02/04 13:23:44 by nnourine         ###   ########.fr       */
+/*   Updated: 2025/02/04 16:35:10 by nnourine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@
 #include <future>
 #include <thread>
 #include <chrono>
+// #include <optional>
 
 #include "Request.hpp"
 #include "Response.hpp"
@@ -68,15 +69,15 @@ class ClientConnection
 	std::string					request;
 	std::vector<std::string>	responseParts;
 	struct eventData			eventData;
-	HttpHandler					*responseMaker;
+	HttpHandler					responseMaker;
+	// HttpHandler					*responseMaker;
 	int							pipe[2];
 	std::string					body;
 	pid_t						pid;
 	int							errorStatus;
 	struct eventData			pipeEventData;
 	bool						isCGI;
-	std::future<void>			future;
-	std::thread					thread;
+	
 
 	// Public Methods
 	ClientConnection();
@@ -108,6 +109,11 @@ class ClientConnection
 	void						readFromPipe();
 	void						setCGI();
 	void						CGI_child();
+
+
+	std::thread 				thread;
+	std::mutex					mutex;
+	bool						threadIsDone;
 };
 
 #endif
